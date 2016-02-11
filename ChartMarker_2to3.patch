@@ -1,0 +1,73 @@
+--- ChartMarker.py	(original)
++++ ChartMarker.py	(refactored)
+@@ -107,7 +107,7 @@
+     self.z = z
+ 
+   def __mult__(self,o2):
+-    print self, o2
++    print(self, o2)
+ 
+ class Mark:
+   def __init__(self,isSample):
+@@ -297,7 +297,7 @@
+       fmt = fmt.replace("y3",str(int(self.target_area[2].y/opts.scale)))
+       fmt = fmt.replace("x4",str(int(self.target_area[3].x/opts.scale)))
+       fmt = fmt.replace("y4",str(int(self.target_area[3].y/opts.scale)))
+-      print fmt
++      print(fmt)
+     else:
+       opts.returnValue = -1
+     self.Destroy()
+@@ -319,12 +319,12 @@
+           self.target_area[(self.selected_handle+1)%4] += dx
+         elif self.selected_handle < 9: # Middle handle
+           dx = mousepos - self.mouseState_zpos
+-          for idx in xrange(4):
++          for idx in range(4):
+             self.target_area[idx] += dx
+         else: # Rotation handle
+           v = mousepos - self.rotation_center -self.image_position
+           angle = math.atan2(v.y,v.x) - self.rotation_start
+-          for idx in xrange(4):
++          for idx in range(4):
+             X = [self.target_R[idx]*math.cos(self.target_A[idx]+angle),
+                  self.target_R[idx]*math.sin(self.target_A[idx]+angle)]
+             self.target_area[idx] = wx.Point( int(X[0]), int(X[1]) ) +\
+@@ -361,7 +361,7 @@
+ 
+       old_selected_handle = self.selected_handle
+       self.selected_handle = None
+-      for idx in xrange(len(self.target_area)):
++      for idx in range(len(self.target_area)):
+         corner = self.target_area[idx]
+         d = mousepos -corner -self.image_position
+         if -opts.handle_size/2 < d.x and d.x < opts.handle_size and\
+@@ -403,7 +403,7 @@
+         self.rotation_start = math.atan2(v.y,v.x)
+         self.target_R = []
+         self.target_A = []
+-        for idx in xrange(4):
++        for idx in range(4):
+           corner = self.target_area[idx] - center
+           R = math.sqrt(corner.x*corner.x+corner.y*corner.y)
+           self.target_R.append(R)
+@@ -456,8 +456,8 @@
+ 
+         posx = mark.origin.x
+         posy = mark.origin.y
+-        for py in xrange(mark.Ny):
+-          for px in xrange(mark.Nx):
++        for py in range(mark.Ny):
++          for px in range(mark.Nx):
+             corners = [ [posx,
+                          posy],
+                         [posx +mark.size.x,
+@@ -501,7 +501,7 @@
+ 
+     g.SetPen(wx.BLACK_PEN)
+     g.SetBrush(wx.WHITE_BRUSH)
+-    for idx in xrange(len(self.target_area)):
++    for idx in range(len(self.target_area)):
+       corner = self.target_area[idx]
+       g.DrawRectangle( corner.x +self.image_position.x -opts.handle_size/2,
+                        corner.y +self.image_position.y -opts.handle_size/2,
