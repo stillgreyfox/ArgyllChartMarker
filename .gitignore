@@ -1,0 +1,6 @@
+.ropeproject
+__pycache__
+*.pyc
+*.swp
+.setup_tmp
+venv
