@@ -117,6 +117,7 @@ class Vec3:
 
 
 class Mark:
+
     def __init__(self, isSample):
         self.Nx = 0
         self.Ny = 0
@@ -127,47 +128,57 @@ class Mark:
 
 
 def dist(a, b):
-    return math.sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y))
+    return math.sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y))
 
 
 def countSteps(str1, str2):
     if len(str1) != len(str2):
         n1 = int(str1)
         n2 = int(str2)
-        return n2-n1+1
+        return n2 - n1 + 1
     count = 0
     for (c1, c2) in zip(str1, str2):
-        count = 10*count + (ord(c2)-ord(c1))
-    return count+1
+        count = 10 * count + (ord(c2) - ord(c1))
+    return count + 1
 
 
 class ChartMarker(wx.Frame):
+
     def __init__(self):
         wx.Frame.__init__(self, None, -1, "Chart Marker",
                           wx.DefaultPosition, wx.Size(700, 500))
 
-        wx.EVT_CLOSE(self, self.OnClose)
-        wx.EVT_PAINT(self, self.OnPaint)
-        wx.EVT_MOTION(self, self.OnMouseMotion)
-        wx.EVT_LEFT_DOWN(self, self.OnMousePress)
-        wx.EVT_LEFT_UP(self, self.OnMousePress)
+        wx.EvtHandler.Bind(self, wx.EVT_CLOSE, self.OnClose)
+        wx.EvtHandler.Bind(self, wx.EVT_PAINT, self.OnPaint)
+        wx.EvtHandler.Bind(self, wx.EVT_MOTION, self.OnMouseMotion)
+        wx.EvtHandler.Bind(self, wx.EVT_LEFT_DOWN, self.OnMousePress)
+        wx.EvtHandler.Bind(self, wx.EVT_LEFT_UP, self.OnMousePress)
 
         self.image = wx.Image(cmd_args[0], wx.BITMAP_TYPE_ANY)
-        if math.fabs(1-opts.scale) > 0.001:
+        if math.fabs(1 - opts.scale) > 0.001:
             self.image = \
-                self.image.Scale(int(self.image.GetWidth()*opts.scale),
-                                 int(self.image.GetHeight()*opts.scale))
-        self.bitmap = wx.BitmapFromImage(self.image)
+                self.image.Scale(int(self.image.GetWidth() * opts.scale),
+                                 int(self.image.GetHeight() * opts.scale))
+        self.bitmap = wx.Bitmap(self.image)
         self.image_position = wx.Point(0, 0)
         self.image_size = [self.image.GetWidth(), self.image.GetHeight()]
+        self.target_area = [wx.Point(0, 0),
+                            wx.Point(self.image_size[0], 0),
+                            wx.Point(self.image_size[0], self.image_size[1]),
+                            wx.Point(0, self.image_size[1])]
+        '''
         size = [self.GetSize().GetWidth(), self.GetSize().GetHeight()]
-        self.target_area = [wx.Point(1*size[0]/4, 1*size[1]/4),
-                            wx.Point(3*size[0]/4, 1*size[1]/4),
-                            wx.Point(3*size[0]/4, 3*size[1]/4),
-                            wx.Point(1*size[0]/4, 3*size[1]/4)]
+        self.target_area = [wx.Point(1 * size[0] / 4, 1 * size[1] / 4),
+                            wx.Point(3 * size[0] / 4, 1 * size[1] / 4),
+                            wx.Point(3 * size[0] / 4, 3 * size[1] / 4),
+                            wx.Point(1 * size[0] / 4, 3 * size[1] / 4)]
+        '''
 
-        self.SetSize(wx.Size(min(1024, max(200, self.image_size[0])),
-                             min(768, max(200, self.image_size[1]))))
+        '''
+        # this is now done after instantiating class. wouldn't work this way
+        self.SetSize(wx.Size(min(1920, max(200, self.image_size[0])),
+                             min(1080, max(200, self.image_size[1]))))
+        '''
 
         self.mouseState_drag = False
         self.selected_handle = None
@@ -185,8 +196,11 @@ class ChartMarker(wx.Frame):
                         found_boxes = False
 
                 if found_boxes:
-                    line = tin.next().strip()
+                    print(line)
+                    line = tin.__next__().strip()
                     while len(line) > 0:
+                        print(line)
+                        print('here')
                         T = line.split()
                         if T[0] == "F":
                             self.fiducials = [
@@ -194,10 +208,15 @@ class ChartMarker(wx.Frame):
                                 wx.RealPoint(float(T[5]), float(T[6])),
                                 wx.RealPoint(float(T[7]), float(T[8])),
                                 wx.RealPoint(float(T[9]), float(T[10]))]
+                            print(self.fiducials)
 
-                        elif T[0] == "X" or T[0] == "Y" or T[0] == "D":
+                        elif (T[0] == "X" or
+                              T[0] == "Y" or
+                              T[0] == "D"):
                             mark = Mark(T[0] != "D")
-                            if T[1] == "_" or T[1] == "ALL" or T[1] == "MARK":
+                            if T[1] == "_" or \
+                               T[1] == "ALL" or \
+                               T[1] == "MARK":
                                 mark.Nx = 1
                             else:
                                 mark.Nx = countSteps(T[1], T[2])
@@ -218,36 +237,36 @@ class ChartMarker(wx.Frame):
                         else:
                             sys.stderr.write("Parse error in target file.")
 
-                        line = tin.next().strip()
+                        line = tin.__next__().strip()
 
-                        maxX = 0.0
-                        maxY = 0.0
-                        for mark in self.fiducials:
-                            maxX = max(maxX, mark.x)
-                            maxY = max(maxY, mark.y)
-                        for mark in self.marks:
-                            maxX = max(maxX, mark.origin.x)
-                            maxY = max(maxY, mark.origin.y)
-                            maxX = max(maxX, mark.origin.x +
-                                       mark.Nx * mark.offset.x)
-                            maxY = max(maxY, mark.origin.y +
-                                       mark.Ny * mark.offset.y)
+                    maxX = 0.0
+                    maxY = 0.0
+                    for mark in self.fiducials:
+                        maxX = max(maxX, mark.x)
+                        maxY = max(maxY, mark.y)
+                    for mark in self.marks:
+                        maxX = max(maxX, mark.origin.x)
+                        maxY = max(maxY, mark.origin.y)
+                        maxX = max(maxX, mark.origin.x +
+                                   mark.Nx * mark.offset.x)
+                        maxY = max(maxY, mark.origin.y +
+                                   mark.Ny * mark.offset.y)
 
-                        maxA = max(maxX, maxY)
-                        maxX = maxY = maxA
+                    maxA = max(maxX, maxY)
+                    maxX = maxY = maxA
 
-                        for mark in self.fiducials:
-                            mark.x = mark.x/maxX
-                            mark.y = mark.y/maxY
-                        for mark in self.marks:
-                            mark.origin.x = mark.origin.x/maxX
-                            mark.origin.y = mark.origin.y/maxY
-                            mark.offset.x = mark.offset.x/maxX
-                            mark.offset.y = mark.offset.y/maxY
-                            mark.size.x = mark.size.x/maxX
-                            mark.size.y = mark.size.y/maxY
+                    for mark in self.fiducials:
+                        mark.x = mark.x / maxX
+                        mark.y = mark.y / maxY
+                    for mark in self.marks:
+                        mark.origin.x = mark.origin.x / maxX
+                        mark.origin.y = mark.origin.y / maxY
+                        mark.offset.x = mark.offset.x / maxX
+                        mark.offset.y = mark.offset.y / maxY
+                        mark.size.x = mark.size.x / maxX
+                        mark.size.y = mark.size.y / maxY
 
-                        self.UpdateMarkerData()
+                    self.UpdateMarkerData()
 
                 else:
                     sys.stderr.write("Could not find boxes in target file.")
@@ -257,10 +276,10 @@ class ChartMarker(wx.Frame):
                         opts.area_shrink = float(line.split()[1])
                         opts.area_shrink = float(line.split()[1])
                         break
-                opts.area_shrink_x = opts.area_shrink/maxX
-                opts.area_shrink_y = opts.area_shrink/maxY
+                opts.area_shrink_x = opts.area_shrink / maxX
+                opts.area_shrink_y = opts.area_shrink / maxY
 
-            self.Fit()
+        self.Fit()
 
     def UpdateMarkerData(self):
         if self.fiducials is not None:
@@ -296,7 +315,7 @@ class ChartMarker(wx.Frame):
     def GetABCDPoint(self, pos):
         U = numpy.array([pos[0], pos[1], 1])
         X = numpy.dot(self.Msd, U)
-        return wx.Point(int(X[0]/X[2]), int(X[1]/X[2]))
+        return wx.Point(int(X[0] / X[2]), int(X[1] / X[2]))
 
     def OnClose(self, event):
         self.OnExit(False)
@@ -331,8 +350,8 @@ class ChartMarker(wx.Frame):
                     self.target_area[self.selected_handle] += dx
                 elif self.selected_handle < 8:  # Edge handle
                     dx = mousepos - self.mouseState_zpos
-                    self.target_area[self.selected_handle-4] += dx
-                    self.target_area[(self.selected_handle+1) % 4] += dx
+                    self.target_area[self.selected_handle - 4] += dx
+                    self.target_area[(self.selected_handle + 1) % 4] += dx
                 elif self.selected_handle < 9:  # Middle handle
                     dx = mousepos - self.mouseState_zpos
                     for idx in range(4):
@@ -342,9 +361,9 @@ class ChartMarker(wx.Frame):
                     angle = math.atan2(v.y, v.x) - self.rotation_start
                     for idx in range(4):
                         X = [self.target_R[idx] *
-                             math.cos(self.target_A[idx]+angle),
+                             math.cos(self.target_A[idx] + angle),
                              self.target_R[idx] *
-                             math.sin(self.target_A[idx]+angle)]
+                             math.sin(self.target_A[idx] + angle)]
                         self.target_area[idx] = \
                             wx.Point(int(X[0]), int(X[1])) + \
                             self.rotation_center
@@ -353,12 +372,12 @@ class ChartMarker(wx.Frame):
                 size = self.GetSize()
                 if mousepos.x < opts.border_size:
                     self.image_position = self.image_position + \
-                        wx.Point(opts.border_size-mousepos.x, 0)
+                        wx.Point(opts.border_size - mousepos.x, 0)
                     mousepos = mousepos + \
                         wx.Point(opts.border_size - mousepos.x, 0)
                 if mousepos.y < opts.border_size:
                     self.image_position = self.image_position + \
-                        wx.Point(0, opts.border_size-mousepos.y)
+                        wx.Point(0, opts.border_size - mousepos.y)
                     mousepos = mousepos + \
                         wx.Point(0, opts.border_size - mousepos.y)
                 if mousepos.x > size.GetWidth() - opts.border_size:
@@ -381,9 +400,9 @@ class ChartMarker(wx.Frame):
         else:
 
             if opts.handle_size < mousepos.x and \
-               mousepos.x < 2*opts.handle_size and \
-               opts.handle_size < mousepos.y and \
-               mousepos.y < 2*opts.handle_size:
+                    mousepos.x < 2 * opts.handle_size and \
+                    opts.handle_size < mousepos.y and \
+                    mousepos.y < 2 * opts.handle_size:
                 if self.button_status != 1:
                     needsRefresh = True
                 self.button_status = 1
@@ -397,18 +416,18 @@ class ChartMarker(wx.Frame):
             for idx in range(len(self.target_area)):
                 corner = self.target_area[idx]
                 d = mousepos - corner - self.image_position
-                if -opts.handle_size/2 < d.x and d.x < opts.handle_size and \
-                   -opts.handle_size/2 < d.y and d.y < opts.handle_size:
+                if -opts.handle_size / 2 < d.x and d.x < opts.handle_size and \
+                   -opts.handle_size / 2 < d.y and d.y < opts.handle_size:
                     self.selected_handle = idx
                     break
 
-                corner2 = self.target_area[(idx+1) % 4]
+                corner2 = self.target_area[(idx + 1) % 4]
                 d = mousepos - \
-                    wx.Point((corner.x+corner2.x)/2,
-                             (corner.y+corner2.y)/2) - self.image_position
-                if -opts.handle_size/2 < d.x and d.x < opts.handle_size and \
-                   -opts.handle_size/2 < d.y and d.y < opts.handle_size:
-                    self.selected_handle = idx+4
+                    wx.Point((corner.x + corner2.x) / 2,
+                             (corner.y + corner2.y) / 2) - self.image_position
+                if -opts.handle_size / 2 < d.x and d.x < opts.handle_size and \
+                   -opts.handle_size / 2 < d.y and d.y < opts.handle_size:
+                    self.selected_handle = idx + 4
                     break
 
             center = wx.Point(0, 0)
@@ -418,8 +437,8 @@ class ChartMarker(wx.Frame):
             center.y /= 4
 
             d = mousepos - center - self.image_position
-            if -opts.handle_size/2 < d.x and d.x < opts.handle_size and \
-               -opts.handle_size/2 < d.y and d.y < opts.handle_size:
+            if -opts.handle_size / 2 < d.x and d.x < opts.handle_size and \
+                    -opts.handle_size / 2 < d.y and d.y < opts.handle_size:
                 self.selected_handle = 8
 
             center2 = center + center + \
@@ -428,8 +447,8 @@ class ChartMarker(wx.Frame):
             center2.y /= 4
 
             d = mousepos - center2 - self.image_position
-            if -opts.handle_size/2 < d.x and d.x < opts.handle_size and \
-               -opts.handle_size/2 < d.y and d.y < opts.handle_size:
+            if -opts.handle_size / 2 < d.x and d.x < opts.handle_size and \
+                    -opts.handle_size / 2 < d.y and d.y < opts.handle_size:
 
                 self.selected_handle = 9
 
@@ -440,7 +459,7 @@ class ChartMarker(wx.Frame):
                 self.target_A = []
                 for idx in range(4):
                     corner = self.target_area[idx] - center
-                    R = math.sqrt(corner.x*corner.x+corner.y*corner.y)
+                    R = math.sqrt(corner.x * corner.x + corner.y * corner.y)
                     self.target_R.append(R)
                     A = math.atan2(corner.y, corner.x)
                     self.target_A.append(A)
@@ -458,17 +477,17 @@ class ChartMarker(wx.Frame):
             if self.button_status == 1:
                 self.button_status = 2
                 self.Refresh()
-            else:
-                if self.button_status == 2:
-                    mousepos = event.GetPosition()
-                    if opts.handle_size < mousepos.x and \
-                       mousepos.x < 2*opts.handle_size and \
-                       opts.handle_size < mousepos.y and \
-                       mousepos.y < 2*opts.handle_size:
-                        self.OnExit(True)
-                    else:
-                        self.button_status = 0
-                        self.Refresh()
+        else:
+            if self.button_status == 2:
+                mousepos = event.GetPosition()
+                if opts.handle_size < mousepos.x and \
+                        mousepos.x < 2 * opts.handle_size and \
+                        opts.handle_size < mousepos.y and \
+                        mousepos.y < 2 * opts.handle_size:
+                    self.OnExit(True)
+                else:
+                    self.button_status = 0
+                    self.Refresh()
 
     def OnPaint(self, event):
         g = wx.PaintDC(self)
@@ -479,7 +498,8 @@ class ChartMarker(wx.Frame):
 
         g.SetLogicalFunction(wx.COPY)
         g.DrawBitmap(self.bitmap,
-                     self.image_position.x, self.image_position.y, False)
+                     self.image_position.x, self.image_position.y,
+                     False)
 
         g.SetPen(wx.GREEN_PEN)
         g.SetBrush(wx.TRANSPARENT_BRUSH)
@@ -489,47 +509,47 @@ class ChartMarker(wx.Frame):
                     shrunksizex = mark.size.x - opts.area_shrink_x
                     shrunksizey = mark.size.y - opts.area_shrink_y
 
-        posx = mark.origin.x
-        posy = mark.origin.y
-        for py in range(mark.Ny):
-            for px in range(mark.Nx):
-                corners = [[posx,
-                            posy],
-                           [posx + mark.size.x,
-                            posy],
-                           [posx + mark.size.x,
-                            posy + mark.size.y],
-                           [posx,
-                            posy + mark.size.y]]
-                points = []
-                for corner in corners:
-                    points.append(self.GetABCDPoint(corner) +
-                                  self.image_position)
-                g.DrawPolygon(points)
+                posx = mark.origin.x
+                posy = mark.origin.y
+                for py in range(mark.Ny):
+                    for px in range(mark.Nx):
+                        corners = [[posx,
+                                    posy],
+                                   [posx + mark.size.x,
+                                    posy],
+                                   [posx + mark.size.x,
+                                    posy + mark.size.y],
+                                   [posx,
+                                    posy + mark.size.y]]
+                        points = []
+                        for corner in corners:
+                            points.append(self.GetABCDPoint(corner) +
+                                          self.image_position)
+                        g.DrawPolygon(points)
 
-                if opts.show_area and mark.isSample:
-                    corners = [[posx + opts.area_shrink_x,
-                                posy + opts.area_shrink_y],
-                               [posx + shrunksizex,
-                                posy + opts.area_shrink_y],
-                               [posx + shrunksizex,
-                                posy + shrunksizey],
-                               [posx + opts.area_shrink_x,
-                                posy + shrunksizey]]
-                points = []
-                for corner in corners:
-                        points.append(self.GetABCDPoint(corner) +
-                                      self.image_position)
-                g.DrawPolygon(points)
-                g.DrawLine(points[0].x, points[0].y,
-                           points[2].x, points[2].y)
-                g.DrawLine(points[1].x, points[1].y,
-                           points[3].x, points[3].y)
+                        if opts.show_area and mark.isSample:
+                            corners = [[posx + opts.area_shrink_x,
+                                        posy + opts.area_shrink_y],
+                                       [posx + shrunksizex,
+                                        posy + opts.area_shrink_y],
+                                       [posx + shrunksizex,
+                                        posy + shrunksizey],
+                                       [posx + opts.area_shrink_x,
+                                        posy + shrunksizey]]
+                            points = []
+                            for corner in corners:
+                                points.append(self.GetABCDPoint(corner) +
+                                              self.image_position)
+                            g.DrawPolygon(points)
+                            g.DrawLine(points[0].x, points[0].y,
+                                       points[2].x, points[2].y)
+                            g.DrawLine(points[1].x, points[1].y,
+                                       points[3].x, points[3].y)
 
-                posx = posx + mark.offset.x
+                        posx = posx + mark.offset.x
 
-            posx = mark.origin.x
-            posy = posy + mark.offset.y
+                    posx = mark.origin.x
+                    posy = posy + mark.offset.y
 
         g.SetPen(wx.RED_PEN)
         g.DrawPolygon(self.target_area,
@@ -541,35 +561,35 @@ class ChartMarker(wx.Frame):
         for idx in range(len(self.target_area)):
             corner = self.target_area[idx]
             g.DrawRectangle(corner.x +
-                            self.image_position.x - opts.handle_size/2,
+                            self.image_position.x - opts.handle_size / 2,
                             corner.y +
-                            self.image_position.y - opts.handle_size/2,
+                            self.image_position.y - opts.handle_size / 2,
                             opts.handle_size, opts.handle_size)
-            corner2 = self.target_area[(idx+1) % 4]
-            g.DrawRectangle((corner.x+corner2.x)/2 +
-                            self.image_position.x - opts.handle_size/2,
-                            (corner.y+corner2.y)/2 +
-                            self.image_position.y - opts.handle_size/2,
+            corner2 = self.target_area[(idx + 1) % 4]
+            g.DrawRectangle((corner.x + corner2.x) / 2 +
+                            self.image_position.x - opts.handle_size / 2,
+                            (corner.y + corner2.y) / 2 +
+                            self.image_position.y - opts.handle_size / 2,
                             opts.handle_size, opts.handle_size)
 
-            center = wx.Point(0, 0)
-            for corner in self.target_area:
-                center = center + corner
-            center.x /= 4
-            center.y /= 4
-            g.DrawRectangle(center.x +
-                            self.image_position.x - opts.handle_size/2,
-                            center.y +
-                            self.image_position.y - opts.handle_size/2,
-                            opts.handle_size, opts.handle_size)
+        center = wx.Point(0, 0)
+        for corner in self.target_area:
+            center = center + corner
+        center.x /= 4
+        center.y /= 4
+        g.DrawRectangle(center.x +
+                        self.image_position.x - opts.handle_size / 2,
+                        center.y +
+                        self.image_position.y - opts.handle_size / 2,
+                        opts.handle_size, opts.handle_size)
 
         center2 = center + center + self.target_area[0] + self.target_area[1]
         center2.x /= 4
         center2.y /= 4
         g.DrawRectangle(center2.x +
-                        self.image_position.x - opts.handle_size/2,
+                        self.image_position.x - opts.handle_size / 2,
                         center2.y +
-                        self.image_position.y - opts.handle_size/2,
+                        self.image_position.y - opts.handle_size / 2,
                         opts.handle_size, opts.handle_size)
 
         if self.selected_handle is not None:
@@ -577,43 +597,43 @@ class ChartMarker(wx.Frame):
             if self.selected_handle < 4:
                 corner = self.target_area[self.selected_handle]
                 g.DrawRectangle(corner.x +
-                                self.image_position.x - opts.handle_size/2,
+                                self.image_position.x - opts.handle_size / 2,
                                 corner.y +
-                                self.image_position.y - opts.handle_size/2,
+                                self.image_position.y - opts.handle_size / 2,
                                 opts.handle_size, opts.handle_size)
             elif self.selected_handle < 8:
-                corner1 = self.target_area[self.selected_handle-4]
-                corner2 = self.target_area[(self.selected_handle-3) % 4]
+                corner1 = self.target_area[self.selected_handle - 4]
+                corner2 = self.target_area[(self.selected_handle - 3) % 4]
                 corner = corner1 + corner2
-                g.DrawRectangle(corner.x/2 +
-                                self.image_position.x - opts.handle_size/2,
-                                corner.y/2 +
-                                self.image_position.y - opts.handle_size/2,
+                g.DrawRectangle(corner.x / 2 +
+                                self.image_position.x - opts.handle_size / 2,
+                                corner.y / 2 +
+                                self.image_position.y - opts.handle_size / 2,
                                 opts.handle_size, opts.handle_size)
             elif self.selected_handle < 9:
                 g.DrawRectangle(center.x +
-                                self.image_position.x - opts.handle_size/2,
+                                self.image_position.x - opts.handle_size / 2,
                                 center.y +
-                                self.image_position.y - opts.handle_size/2,
+                                self.image_position.y - opts.handle_size / 2,
                                 opts.handle_size, opts.handle_size)
             else:
                 g.DrawRectangle(center2.x +
-                                self.image_position.x - opts.handle_size/2,
+                                self.image_position.x - opts.handle_size / 2,
                                 center2.y +
-                                self.image_position.y - opts.handle_size/2,
+                                self.image_position.y - opts.handle_size / 2,
                                 opts.handle_size, opts.handle_size)
 
             g.SetBrush(wx.TRANSPARENT_BRUSH)
 
-            g.SetPen(wx.BLACK_PEN)
-            if self.button_status == 0:
-                g.SetBrush(wx.WHITE_BRUSH)
-            elif self.button_status == 1:
-                g.SetBrush(wx.GREEN_BRUSH)
-            else:
-                g.SetBrush(wx.RED_BRUSH)
-            g.DrawRectangle(opts.handle_size, opts.handle_size,
-                            opts.handle_size, opts.handle_size)
+        g.SetPen(wx.BLACK_PEN)
+        if self.button_status == 0:
+            g.SetBrush(wx.WHITE_BRUSH)
+        elif self.button_status == 1:
+            g.SetBrush(wx.GREEN_BRUSH)
+        else:
+            g.SetBrush(wx.RED_BRUSH)
+        g.DrawRectangle(opts.handle_size, opts.handle_size,
+                        opts.handle_size, opts.handle_size)
 
 
 class MarkerApp(wx.App):
@@ -623,8 +643,11 @@ class MarkerApp(wx.App):
 
     def OnInit(self):
         frame = ChartMarker()
+        frame.SetSize(wx.Size(min(1920, max(200, frame.image_size[0])),
+                              min(1080, max(200, frame.image_size[1] + 27))))
         frame.Show(True)
         self.SetTopWindow(frame)
+        print(frame.image_size)
         return True
 
 
